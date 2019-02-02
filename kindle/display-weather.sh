@@ -7,6 +7,16 @@ then
 fi
 
 echo "Running"
+echo "Enabling WiFi"
+DISABLE_WIFI=0
+# Enable wireless if it is currently off
+if [ 0 -eq `lipc-get-prop com.lab126.cmd wirelessEnable` ]; then
+	logger "WiFi is off, turning it on now"
+	lipc-set-prop com.lab126.cmd wirelessEnable 1
+	DISABLE_WIFI=1
+fi
+
+echo "Configuring kindle settings"
 lipc-set-prop com.lab126.powerd preventScreenSaver 1
 lipc-set-prop com.lab126.pillow interrogatePillow '{"pillowId": "default_status_bar", "function": "nativeBridge.hideMe();"}'
 
@@ -20,3 +30,9 @@ echo "Processing image"
 echo "Displaying image"
 eips -fg ss.png
 eips 47 39 "$(gasgauge-info -s)"
+
+# Disable wireless if necessary
+if [ 1 -eq $DISABLE_WIFI ]; then
+	echo "Disabling WiFi"
+	lipc-set-prop com.lab126.cmd wirelessEnable 0
+fi
