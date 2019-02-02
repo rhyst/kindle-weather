@@ -1,16 +1,17 @@
+import os
 import json
-from PIL import Image, ImageFont, ImageDraw
 import requests
+import datetime
 from flask import Flask, send_file
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
-import datetime
+from PIL import Image, ImageFont, ImageDraw
 from astral import Astral
 from dotenv import load_dotenv
 
 load_dotenv()
-MO_API_KEY = os.get('MO_API_KEY')
-IMAGE_NAME = os.get('IMAGE_NAME')
+MO_API_KEY = os.getenv('MO_API_KEY')
+IMAGE_NAME = os.getenv('IMAGE_NAME')
 
 
 WEATHER_TYPES = {
@@ -63,6 +64,9 @@ def main():
 	image.putdata(image_pixels)
 	draw = ImageDraw.Draw(image)
 
+	bigfont = ImageFont.truetype("Roboto.ttf", 26, encoding="unic")
+	font = ImageFont.truetype("Roboto.ttf", 20, encoding="unic")
+
 	# Get forecast
 	r = requests.get('http://datapoint.metoffice.gov.uk/public/data/val/wxfcs/all/json/351526?res=3hourly&key=' + MO_API_KEY)
 	data = r.json()
@@ -86,25 +90,24 @@ def main():
 		icon = Image.open('icons/' + prediction["W"] + '.png')
 		image.paste(icon, box=(left_offset, 0), mask=icon)
 		# Write datetime
-		text = prediction["datetime"]
-		w, h = draw.textsize(text)
+		text = prediction["time"]
+		w, h = bigfont.getsize(text)
 		center_offset = (100 - w) / 2
-		draw.text((left_offset + center_offset, 100), text, (0,0,0))
-		# Write weather type
-		text = WEATHER_TYPES[prediction["W"]]
-		w, h = draw.textsize(text)
-		center_offset = (100 - w) / 2
-		draw.text((left_offset + center_offset, 115), text, (0,0,0))
+		draw.text((left_offset + center_offset, 85), text, (0,0,0), bigfont)
 		# Write temperature
-		text = 'Feels like ' + prediction["F"] + ' °C'
-		w, h = draw.textsize(text)
+		icon = Image.open('icons/small/thermometer.png')
+		image.paste(icon, box=(left_offset, 120), mask=icon)
+		text = prediction["F"] + ' °C'
+		w, h = font.getsize(text)
 		center_offset = (100 - w) / 2
-		draw.text((left_offset + center_offset, 130), text, (0,0,0))
+		draw.text((left_offset + center_offset, 120), text, (0,0,0), font)
 		# Write rain chance
-		text = prediction["Pp"] + '% chance of rain'
-		w, h = draw.textsize(text)
+		icon = Image.open('icons/small/rain.png')
+		image.paste(icon, box=(left_offset, 140), mask=icon)		
+		text = prediction["Pp"] + '%'
+		w, h = font.getsize(text)
 		center_offset = (100 - w) / 2
-		draw.text((left_offset + center_offset, 145), text, (0,0,0))
+		draw.text((left_offset + center_offset, 140), text, (0,0,0), font)
 
 	d = datetime.datetime.now()
 	a = Astral()
@@ -114,24 +117,24 @@ def main():
 	sunset = sun['sunset']
 
 	icon = Image.open('icons/sunrise.png')
-	image.paste(icon, box=(130, 160), mask=icon)
+	image.paste(icon, box=(130, 175), mask=icon)
 	text = sunrise.strftime('%H:%M')
-	w, h = draw.textsize(text)
+	w, h = font.getsize(text)
 	center_offset = (100 - w) / 2
-	draw.text((130 + center_offset, 260), text, (0,0,0))
+	draw.text((130 + center_offset, 265), text, (0,0,0), font)
 
 	icon = Image.open('icons/sunset.png')
-	image.paste(icon, box=(370, 160), mask=icon)
+	image.paste(icon, box=(370, 175), mask=icon)
 	text = sunset.strftime('%H:%M')
-	w, h = draw.textsize(text)
+	w, h = font.getsize(text)
 	center_offset = (100 - w) / 2
-	draw.text((370 + center_offset, 260), text, (0,0,0))
+	draw.text((370 + center_offset, 265), text, (0,0,0), font)
 
 	# Write checked time and updated time
 	updated_at = datetime.datetime.strptime(data["SiteRep"]['DV']['dataDate'],"%Y-%m-%dT%H:%M:00Z")
 	text = 'Checked at ' + d.strftime('%H:%M') + ' and last updated at ' + updated_at.strftime('%H:%M')
-	w, h = draw.textsize(text)
-	draw.text((10, 790), text, (0,0,0))
+	w, h = font.getsize(text)
+	draw.text((10, 780), text, (0,0,0), font)
 
 	image.save(IMAGE_NAME, "PNG")
 
