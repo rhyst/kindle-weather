@@ -1,0 +1,16 @@
+version: '3'
+services:
+  ${WEATHER_NAME}:
+    build: /home/rhys/workspace/weather/
+    container_name: ${WEATHER_NAME}
+    environment:
+     - VIRTUAL_HOST=weather.rhystyers.com,weather.tyers.io
+     - HTTPS_METHOD=nohttps
+    volumes:
+     - /home/rhys/workspace/weather/app/main.py:/app/main.py
+     - /home/rhys/workspace/weather/app/icons:/app/icons
+    networks:
+     - ${NGINX_PROXY_NETWORK}
+    depends_on:
+     - ${NGINX_PROXY_NAME}
+    restart: always
