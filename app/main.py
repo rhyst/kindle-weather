@@ -66,6 +66,7 @@ def main():
 
 	bigfont = ImageFont.truetype("Roboto.ttf", 26, encoding="unic")
 	font = ImageFont.truetype("Roboto.ttf", 20, encoding="unic")
+	smallfont = ImageFont.truetype("Roboto.ttf", 18, encoding="unic")
 
 	# Get forecast
 	r = requests.get('http://datapoint.metoffice.gov.uk/public/data/val/wxfcs/all/json/351526?res=3hourly&key=' + MO_API_KEY)
@@ -97,17 +98,24 @@ def main():
 		# Write temperature
 		icon = Image.open('icons/small/thermometer.png')
 		image.paste(icon, box=(left_offset, 120), mask=icon)
-		text = prediction["F"] + ' °C'
+		text = prediction["F"] + '°C'
 		w, h = font.getsize(text)
 		center_offset = (100 - w) / 2
 		draw.text((left_offset + center_offset, 120), text, (0,0,0), font)
 		# Write rain chance
 		icon = Image.open('icons/small/rain.png')
-		image.paste(icon, box=(left_offset, 140), mask=icon)		
+		image.paste(icon, box=(left_offset, 145), mask=icon)		
 		text = prediction["Pp"] + '%'
 		w, h = font.getsize(text)
 		center_offset = (100 - w) / 2
-		draw.text((left_offset + center_offset, 140), text, (0,0,0), font)
+		draw.text((left_offset + center_offset, 145), text, (0,0,0), font)
+		# Write wind
+		icon = Image.open('icons/small/deg-' + prediction['D'] + '.png')
+		image.paste(icon, box=(left_offset, 175), mask=icon)		
+		text = str(int(1.609344 * float(prediction["S"]))) + "kph"
+		w, h = smallfont.getsize(text)
+		center_offset = (100 - w) / 2
+		draw.text((left_offset + center_offset, 175), text, (0,0,0), smallfont)
 
 	d = datetime.datetime.now()
 	a = Astral()
@@ -117,24 +125,24 @@ def main():
 	sunset = sun['sunset']
 
 	icon = Image.open('icons/sunrise.png')
-	image.paste(icon, box=(130, 175), mask=icon)
+	image.paste(icon, box=(130, 200), mask=icon)
 	text = sunrise.strftime('%H:%M')
-	w, h = font.getsize(text)
+	w, h = bigfont.getsize(text)
 	center_offset = (100 - w) / 2
-	draw.text((130 + center_offset, 265), text, (0,0,0), font)
+	draw.text((130 + center_offset, 290), text, (0,0,0), bigfont)
 
 	icon = Image.open('icons/sunset.png')
-	image.paste(icon, box=(370, 175), mask=icon)
+	image.paste(icon, box=(370, 200), mask=icon)
 	text = sunset.strftime('%H:%M')
-	w, h = font.getsize(text)
+	w, h = bigfont.getsize(text)
 	center_offset = (100 - w) / 2
-	draw.text((370 + center_offset, 265), text, (0,0,0), font)
+	draw.text((370 + center_offset, 290), text, (0,0,0), bigfont)
 
 	# Write checked time and updated time
 	updated_at = datetime.datetime.strptime(data["SiteRep"]['DV']['dataDate'],"%Y-%m-%dT%H:%M:00Z")
 	text = 'Checked at ' + d.strftime('%H:%M') + ' and last updated at ' + updated_at.strftime('%H:%M')
-	w, h = font.getsize(text)
-	draw.text((10, 780), text, (0,0,0), font)
+	w, h = smallfont.getsize(text)
+	draw.text((10, 775), text, (0,0,0), smallfont)
 
 	image.save(IMAGE_NAME, "PNG")
 
