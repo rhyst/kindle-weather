@@ -3,3 +3,5 @@ lib
 .env
 weather.png
 *.yml
+*.json
+*.dat

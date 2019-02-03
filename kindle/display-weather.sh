@@ -6,6 +6,8 @@ then
 	exit 0
 fi
 
+source ".env"
+
 echo "Running"
 echo "Enabling WiFi"
 DISABLE_WIFI=0
@@ -22,7 +24,7 @@ lipc-set-prop com.lab126.pillow interrogatePillow '{"pillowId": "default_status_
 
 echo "Getting image"
 rm ss.png
-wget -O ss.png http://weather.tyers.io
+wget --http-user=$USER --http-password=$PASSWORD -O ss.png $URL
 
 echo "Processing image"
 ./convert ss.png -filter LanczosSharp -resize 600x800 -background black -gravity center -extent 600x800 -colorspace Gray -dither FloydSteinberg -remap kindle_colors.gif -quality 75 -define png:color-type=0 -define png:bit-depth=8 ss.png
