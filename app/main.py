@@ -13,6 +13,7 @@ from datetime import timedelta
 from googleapiclient.discovery import build
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
+import arrow
 
 load_dotenv()
 MO_API_KEY = os.getenv('MO_API_KEY')
@@ -86,6 +87,7 @@ def main():
 	bigfont = ImageFont.truetype("Roboto.ttf", 26, encoding="unic")
 	font = ImageFont.truetype("Roboto.ttf", 20, encoding="unic")
 	smallfont = ImageFont.truetype("Roboto.ttf", 18, encoding="unic")
+	boldfont = ImageFont.truetype("RobotoBold.ttf", 18, encoding="unic")
 
 	# Get forecast
 	r = requests.get('http://datapoint.metoffice.gov.uk/public/data/val/wxfcs/all/json/351526?res=3hourly&key=' + MO_API_KEY)
@@ -165,29 +167,33 @@ def main():
 	# Get upcoming calendar events
 	calendar_sdk = build('calendar', 'v3', credentials=credentials)
 	calendar_list = calendar_sdk.calendarList().list().execute()
-	print(calendar_list)
+	for calendar in calendar_list['items']:
+		print(calendar['id'] + ' ' + calendar['summary'])
 	calendar_ids = [ calendar_list_entry['id'] for calendar_list_entry in calendar_list['items'] ]
 	today = datetime.datetime.now()
 	today_morning = today.strftime('%Y-%m-%dT00:00:00Z')
 	tomorrow = today + timedelta(days=1)
-	#tomorrow_evening = tomorrow.strftime('%Y-%m-%dT23:59:00Z')
 	events = []
 	for calendar_id in calendar_ids:
 		events_page = calendar_sdk.events().list(
 			calendarId=calendar_id, 
 			timeMin=today_morning,
-			#timeMax=tomorrow_evening,
 			maxResults=10,
 			singleEvents=True,
 			orderBy="startTime",
 			).execute()
 		events += events_page['items']
 
-	text = "Agenda"
+	def suffix(d):
+		return 'th' if 11<=d<=13 else {1:'st',2:'nd',3:'rd'}.get(d%10, 'th')
+	def custom_strftime(format, t):
+		return t.strftime(format).replace('{S}', str(t.day) + suffix(t.day))
+	draw.line((0, 330, 600, 330), fill=255)
+	text = 	custom_strftime('%A the {S} of %B %Y', d)
 	w, h = bigfont.getsize(text)
-	center_offset = (100 - w) / 2
-	draw.text((250 + center_offset, 330), text, (0,0,0), bigfont)
-	y = 375
+	center_offset = (600 - w) / 2
+	draw.text((center_offset, 340), text, (0,0,0), bigfont)
+	y = 370
 
 	def get_key(event):
 		if 'dateTime' in event['start']:
@@ -196,9 +202,11 @@ def main():
 			return datetime.datetime.strptime(event['start']['date'], '%Y-%m-%d')
 	events.sort(key=get_key)
 
+	item_spacing = 25
+	extra_day_spacing = 5
 	current_date = None
 	for event in events:
-		if y >= 740:
+		if y >= 750:
 			break
 		summary = event['summary']
 		calendar = 'Unknown'
@@ -213,16 +221,25 @@ def main():
 			start_time = datetime.datetime.strptime(event['start']['date'], '%Y-%m-%d')
 			time_text = 'All day'
 		if current_date != start_time.strftime('%Y/%m/%d'):
-			y += 5
-			text = start_time.strftime('%Y/%m/%d')
-			draw.text((10, y), text, (0,0,0), smallfont)
+			if y + item_spacing + extra_day_spacing >= 750:
+				break
+			y += extra_day_spacing
+			if start_time.strftime('%Y/%m/%d') == today.strftime('%Y/%m/%d'):
+				text = 'Today'
+			elif start_time.strftime('%Y/%m/%d') == tomorrow.strftime('%Y/%m/%d'):
+				text = 'Tomorrow'
+			else:
+				text = arrow.get(start_time).humanize().capitalize() + ' on ' + custom_strftime('%A the {S} of %B', start_time)
+			draw.text((10, y), text, (0,0,0), boldfont)
 			current_date = start_time.strftime('%Y/%m/%d')
-			y += 20
-		text = time_text + ' - ' + summary
-		if len(text) > 75:
-			text = text[:72] + '...'
+			y += item_spacing
+		text = time_text 
 		draw.text((10, y), text, (0,0,0), smallfont)
-		y += 20
+		text = summary
+		if len(text) > 60:
+			text = text[:57] + '...'
+		draw.text((135, y), text, (0,0,0), smallfont)
+		y += item_spacing
 
 	image.save(IMAGE_NAME, "PNG")
 
