@@ -65,13 +65,13 @@ limiter = Limiter(
 def main():
 	# Create api credentials
 	SCOPES = ['https://www.googleapis.com/auth/calendar.readonly', ]
-	if not os.path.exists('credentials.dat'):
-		flow = InstalledAppFlow.from_client_secrets_file('client_id.json', SCOPES)
+	if not os.path.exists('config/credentials.dat'):
+		flow = InstalledAppFlow.from_client_secrets_file('config/client_id.json', SCOPES)
 		credentials = flow.run_local_server()
-		with open('credentials.dat', 'wb') as credentials_dat:
+		with open('config/credentials.dat', 'wb') as credentials_dat:
 			pickle.dump(credentials, credentials_dat)
 	else:
-		with open('credentials.dat', 'rb') as credentials_dat:
+		with open('config/credentials.dat', 'rb') as credentials_dat:
 			credentials = pickle.load(credentials_dat)
 
 	if credentials.expired:
