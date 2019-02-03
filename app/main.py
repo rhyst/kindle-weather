@@ -8,6 +8,11 @@ from flask_limiter.util import get_remote_address
 from PIL import Image, ImageFont, ImageDraw
 from astral import Astral
 from dotenv import load_dotenv
+import pickle
+from datetime import timedelta
+from googleapiclient.discovery import build
+from google_auth_oauthlib.flow import InstalledAppFlow
+from google.auth.transport.requests import Request
 
 load_dotenv()
 MO_API_KEY = os.getenv('MO_API_KEY')
@@ -58,6 +63,20 @@ limiter = Limiter(
 
 @app.route("/")
 def main():
+	# Create api credentials
+	SCOPES = ['https://www.googleapis.com/auth/calendar.readonly', ]
+	if not os.path.exists('credentials.dat'):
+		flow = InstalledAppFlow.from_client_secrets_file('client_id.json', SCOPES)
+		credentials = flow.run_local_server()
+		with open('credentials.dat', 'wb') as credentials_dat:
+			pickle.dump(credentials, credentials_dat)
+	else:
+		with open('credentials.dat', 'rb') as credentials_dat:
+			credentials = pickle.load(credentials_dat)
+
+	if credentials.expired:
+		credentials.refresh(Request())
+	
 	# Make blank image
 	image_pixels = [(255, 255, 255) for i in range(600*800)]
 	image = Image.new("RGBA", (600,800))
@@ -141,8 +160,69 @@ def main():
 	# Write checked time and updated time
 	updated_at = datetime.datetime.strptime(data["SiteRep"]['DV']['dataDate'],"%Y-%m-%dT%H:%M:00Z")
 	text = 'Checked at ' + d.strftime('%H:%M') + ' and last updated at ' + updated_at.strftime('%H:%M')
-	w, h = smallfont.getsize(text)
 	draw.text((10, 775), text, (0,0,0), smallfont)
+
+	# Get upcoming calendar events
+	calendar_sdk = build('calendar', 'v3', credentials=credentials)
+	calendar_list = calendar_sdk.calendarList().list().execute()
+	print(calendar_list)
+	calendar_ids = [ calendar_list_entry['id'] for calendar_list_entry in calendar_list['items'] ]
+	today = datetime.datetime.now()
+	today_morning = today.strftime('%Y-%m-%dT00:00:00Z')
+	tomorrow = today + timedelta(days=1)
+	#tomorrow_evening = tomorrow.strftime('%Y-%m-%dT23:59:00Z')
+	events = []
+	for calendar_id in calendar_ids:
+		events_page = calendar_sdk.events().list(
+			calendarId=calendar_id, 
+			timeMin=today_morning,
+			#timeMax=tomorrow_evening,
+			maxResults=10,
+			singleEvents=True,
+			orderBy="startTime",
+			).execute()
+		events += events_page['items']
+
+	text = "Agenda"
+	w, h = bigfont.getsize(text)
+	center_offset = (100 - w) / 2
+	draw.text((250 + center_offset, 330), text, (0,0,0), bigfont)
+	y = 375
+
+	def get_key(event):
+		if 'dateTime' in event['start']:
+			return datetime.datetime.strptime(event['start']['dateTime'], '%Y-%m-%dT%H:%M:%SZ')
+		else:
+			return datetime.datetime.strptime(event['start']['date'], '%Y-%m-%d')
+	events.sort(key=get_key)
+
+	current_date = None
+	for event in events:
+		if y >= 740:
+			break
+		summary = event['summary']
+		calendar = 'Unknown'
+		if 'organizer' in event and 'displayName' in event['organizer']:
+			calendar = event['organizer']['displayName']
+		if 'dateTime' in event['start']:
+			start_time = datetime.datetime.strptime(event['start']['dateTime'], '%Y-%m-%dT%H:%M:%SZ')
+			end_time = datetime.datetime.strptime(event['end']['dateTime'], '%Y-%m-%dT%H:%M:%SZ')
+			diff = abs(start_time - end_time)
+			time_text = start_time.strftime('%H:%M') + ' ' + str(diff.seconds//3600) + ' hours' 
+		else:
+			start_time = datetime.datetime.strptime(event['start']['date'], '%Y-%m-%d')
+			time_text = 'All day'
+		if current_date != start_time.strftime('%Y/%m/%d'):
+			y += 5
+			text = start_time.strftime('%Y/%m/%d')
+			draw.text((10, y), text, (0,0,0), smallfont)
+			current_date = start_time.strftime('%Y/%m/%d')
+			y += 20
+		text = time_text + ' - ' + summary
+		if len(text) > 75:
+			text = text[:72] + '...'
+		draw.text((10, y), text, (0,0,0), smallfont)
+		y += 20
 
 	image.save(IMAGE_NAME, "PNG")
 
