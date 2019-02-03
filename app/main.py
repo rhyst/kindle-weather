@@ -2,7 +2,7 @@ import os
 import json
 import requests
 import datetime
-from flask import Flask, send_file
+from flask import Flask, send_file, request, redirect
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from PIL import Image, ImageFont, ImageDraw
@@ -11,9 +11,9 @@ from dotenv import load_dotenv
 import pickle
 from datetime import timedelta
 from googleapiclient.discovery import build
-from google_auth_oauthlib.flow import InstalledAppFlow
-from google.auth.transport.requests import Request
+from google_auth_oauthlib.flow import Flow
 import arrow
+
 
 load_dotenv()
 MO_API_KEY = os.getenv('MO_API_KEY')
@@ -65,18 +65,23 @@ limiter = Limiter(
 @app.route("/")
 def main():
 	# Create api credentials
-	SCOPES = ['https://www.googleapis.com/auth/calendar.readonly', ]
-	if not os.path.exists('config/credentials.dat'):
-		flow = InstalledAppFlow.from_client_secrets_file('config/client_id.json', SCOPES)
-		credentials = flow.run_local_server()
-		with open('config/credentials.dat', 'wb') as credentials_dat:
-			pickle.dump(credentials, credentials_dat)
-	else:
+	credentials = None
+	if os.path.exists('config/credentials.dat'):
 		with open('config/credentials.dat', 'rb') as credentials_dat:
 			credentials = pickle.load(credentials_dat)
-
-	if credentials.expired:
-		credentials.refresh(Request())
+	if not credentials or credentials.expired:
+		flow = Flow.from_client_secrets_file(
+				'config/client_id.json',
+				scopes=['https://www.googleapis.com/auth/calendar.readonly'],
+				redirect_uri='http://weather.tyers.io')
+		code = request.args.get('code')
+		if not code:
+			auth_url, _ = flow.authorization_url(prompt='consent')
+			return redirect(auth_url)
+		flow.fetch_token(code=code)
+		credentials = flow.credentials
+		with open('config/credentials.dat', 'wb') as credentials_dat:
+			pickle.dump(credentials, credentials_dat)
 	
 	# Make blank image
 	image_pixels = [(255, 255, 255) for i in range(600*800)]
@@ -84,10 +89,10 @@ def main():
 	image.putdata(image_pixels)
 	draw = ImageDraw.Draw(image)
 
-	bigfont = ImageFont.truetype("Roboto.ttf", 26, encoding="unic")
-	font = ImageFont.truetype("Roboto.ttf", 20, encoding="unic")
-	smallfont = ImageFont.truetype("Roboto.ttf", 18, encoding="unic")
-	boldfont = ImageFont.truetype("RobotoBold.ttf", 18, encoding="unic")
+	bigfont = ImageFont.truetype("fonts/Roboto.ttf", 26, encoding="unic")
+	font = ImageFont.truetype("fonts/Roboto.ttf", 20, encoding="unic")
+	smallfont = ImageFont.truetype("fonts/Roboto.ttf", 18, encoding="unic")
+	boldfont = ImageFont.truetype("fonts/RobotoBold.ttf", 18, encoding="unic")
 
 	# Get forecast
 	r = requests.get('http://datapoint.metoffice.gov.uk/public/data/val/wxfcs/all/json/351526?res=3hourly&key=' + MO_API_KEY)
