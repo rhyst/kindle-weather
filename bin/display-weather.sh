@@ -23,7 +23,7 @@ rm ss.png
 curl -L --user $USER:$PASSWORD $URL > ss.png
 
 echo "Processing image"
-./convert ss.png -filter LanczosSharp -resize 600x800 -background black -gravity center -extent 600x800 -colorspace Gray -dither FloydSteinberg -remap kindle_colors.gif -quality 75 -define png:color-type=0 -def$
+./convert ss.png -filter LanczosSharp -resize 600x800 -background black -gravity center -extent 600x800 -colorspace Gray -dither FloydSteinberg -remap kindle_colors.gif -quality 75 -define png:color-type=0 -define png:bit-depth=8 ss.png
 
 echo "Displaying image"
 eips -fg ss.png
@@ -35,8 +35,17 @@ if [ 1 -eq $DISABLE_WIFI ]; then
         lipc-set-prop com.lab126.cmd wirelessEnable 0
 fi
 
-if [ 0 -eq `lipc-get-prop com.lab126.cmd wirelessEnable` ]; then
-        eips 38 39 "WiFi Off"
-else
-        eips 38 39 "WiFi On "
+if [ -f "mode-wifi" ]
+then
+        if [ 0 -eq `lipc-get-prop com.lab126.cmd wirelessEnable` ]; then
+                eips 38 39 "WiFi Off"
+        else
+                eips 38 39 "WiFi On "
+        fi
+elif [ -f "mode-refresh" ]
+then
+        eips 38 39 "Refresh "
+elif [ -f "mode-close" ]
+then
+        eips 38 39 "Exit    "
 fi
