@@ -13,6 +13,8 @@ while true; do
                 fi
         elif [ -f "mode-refresh" ]
         then
+                eips -d l=fff,w=600,h=800
+                eips 20 16 "Refreshing..."
                 ./display-weather.sh
         elif [ -f "mode-close" ]
         then
