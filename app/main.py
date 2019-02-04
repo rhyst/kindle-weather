@@ -12,6 +12,7 @@ import pickle
 from datetime import timedelta
 from googleapiclient.discovery import build
 from google_auth_oauthlib.flow import Flow
+from google.auth.transport.requests import Request
 import arrow
 
 
@@ -69,7 +70,7 @@ def main():
 	if os.path.exists('config/credentials.dat'):
 		with open('config/credentials.dat', 'rb') as credentials_dat:
 			credentials = pickle.load(credentials_dat)
-	if not credentials or credentials.expired:
+	if not credentials:
 		flow = Flow.from_client_secrets_file(
 				'config/client_id.json',
 				scopes=['https://www.googleapis.com/auth/calendar.readonly'],
@@ -82,7 +83,9 @@ def main():
 		credentials = flow.credentials
 		with open('config/credentials.dat', 'wb') as credentials_dat:
 			pickle.dump(credentials, credentials_dat)
-	
+	if credentials and credentials.expired:
+		credentials.refresh(Request())
+
 	# Make blank image
 	image_pixels = [(255, 255, 255) for i in range(600*800)]
 	image = Image.new("RGBA", (600,800))
