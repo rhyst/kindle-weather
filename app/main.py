@@ -20,7 +20,6 @@ load_dotenv()
 MO_API_KEY = os.getenv('MO_API_KEY')
 IMAGE_NAME = os.getenv('IMAGE_NAME')
 
-
 WEATHER_TYPES = {
 	"NA": "Not available",
 	"0": "Clear night",
@@ -62,6 +61,13 @@ limiter = Limiter(
     key_func=get_remote_address,
     default_limits=["5/minute"]
 )
+
+def getDate(dateString):
+	if len(dateString) <= 11:
+		dateString = dateString + 'T00:00:00+00:00'
+	if len(dateString) <= 21:
+		dateString = dateString[:-1] + '+00:00'
+	return datetime.datetime.strptime(dateString,"%Y-%m-%dT%H:%M:00%z")
 
 @app.route("/")
 def main():
@@ -168,7 +174,7 @@ def main():
 	draw.text((370 + center_offset, 290), text, (0,0,0), bigfont)
 
 	# Write checked time and updated time
-	updated_at = datetime.datetime.strptime(data["SiteRep"]['DV']['dataDate'],"%Y-%m-%dT%H:%M:00Z")
+	updated_at = getDate(data["SiteRep"]['DV']['dataDate'])
 	text = 'Checked at ' + d.strftime('%H:%M') + ' and last updated at ' + updated_at.strftime('%H:%M')
 	draw.text((10, 775), text, (0,0,0), smallfont)
 
@@ -205,9 +211,9 @@ def main():
 
 	def get_key(event):
 		if 'dateTime' in event['start']:
-			return datetime.datetime.strptime(event['start']['dateTime'], '%Y-%m-%dT%H:%M:%SZ')
+			return getDate(event['start']['dateTime'])
 		else:
-			return datetime.datetime.strptime(event['start']['date'], '%Y-%m-%d')
+			return getDate(event['start']['date'])
 	events.sort(key=get_key)
 
 	item_spacing = 25
@@ -221,12 +227,12 @@ def main():
 		if 'organizer' in event and 'displayName' in event['organizer']:
 			calendar = event['organizer']['displayName']
 		if 'dateTime' in event['start']:
-			start_time = datetime.datetime.strptime(event['start']['dateTime'], '%Y-%m-%dT%H:%M:%SZ')
-			end_time = datetime.datetime.strptime(event['end']['dateTime'], '%Y-%m-%dT%H:%M:%SZ')
+			start_time = getDate(event['start']['dateTime'])
+			end_time = getDate(event['end']['dateTime'])
 			diff = abs(start_time - end_time)
 			time_text = start_time.strftime('%H:%M') + ' ' + str(diff.seconds//3600) + ' hours' 
 		else:
-			start_time = datetime.datetime.strptime(event['start']['date'], '%Y-%m-%d')
+			start_time = getDate(event['start']['date'])
 			time_text = 'All day'
 		if current_date != start_time.strftime('%Y/%m/%d'):
 			if y + item_spacing + extra_day_spacing >= 750:
