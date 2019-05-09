@@ -2,7 +2,7 @@ import os
 import json
 import requests
 import datetime
-from flask import Flask, send_file, request, redirect
+from flask import Flask, send_file, request, redirect, jsonify
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from PIL import Image, ImageFont, ImageDraw
@@ -67,7 +67,7 @@ def getDate(dateString):
 		dateString = dateString + 'T00:00:00+00:00'
 	if len(dateString) <= 21:
 		dateString = dateString[:-1] + '+00:00'
-	return datetime.datetime.strptime(dateString,"%Y-%m-%dT%H:%M:00%z")
+	return datetime.datetime.strptime(dateString,"%Y-%m-%dT%H:%M:%S%z")
 
 @app.route("/")
 def main():
@@ -104,7 +104,7 @@ def main():
 	boldfont = ImageFont.truetype("fonts/RobotoBold.ttf", 18, encoding="unic")
 
 	# Get forecast
-	r = requests.get('http://datapoint.metoffice.gov.uk/public/data/val/wxfcs/all/json/351526?res=3hourly&key=' + MO_API_KEY)
+	r = requests.get('http://datapoint.metoffice.gov.uk/public/data/val/wxfcs/all/json/352036?res=3hourly&key=' + MO_API_KEY)
 	data = r.json()
 
 	# Convert forecast to something readable
@@ -129,7 +129,7 @@ def main():
 		text = prediction["time"]
 		w, h = bigfont.getsize(text)
 		center_offset = (100 - w) / 2
-		draw.text((left_offset + center_offset, 85), text, (0,0,0), bigfont)
+		draw.text((left_offset + center_offset, 90), text, (0,0,0), bigfont)
 		# Write temperature
 		icon = Image.open('icons/small/thermometer.png')
 		image.paste(icon, box=(left_offset, 120), mask=icon)
@@ -152,13 +152,24 @@ def main():
 		center_offset = (100 - w) / 2
 		draw.text((left_offset + center_offset, 175), text, (0,0,0), smallfont)
 
+	# Get todays sunrise and sunset
 	d = datetime.datetime.now()
 	a = Astral()
 	location = a['London']
 	sun = location.sun(local=True, date=d)
 	sunrise = sun['sunrise']
 	sunset = sun['sunset']
+	day_len = sunset - sunrise
 
+	# Get yesterdays sunrise and sunset
+	d_yest = d - timedelta(days=1)
+	sun_yest = location.sun(local=True, date=d_yest)
+	sunrise_yest = sun_yest['sunrise']
+	sunset_yest = sun_yest['sunset']
+	day_len_yest = sunset_yest - sunrise_yest
+	day_len_diff = day_len - day_len_yest
+
+	# Render sunrise icon and todays sunrise time
 	icon = Image.open('icons/sunrise.png')
 	image.paste(icon, box=(130, 200), mask=icon)
 	text = sunrise.strftime('%H:%M')
@@ -166,6 +177,21 @@ def main():
 	center_offset = (100 - w) / 2
 	draw.text((130 + center_offset, 290), text, (0,0,0), bigfont)
 
+	# Render sun icon, day length and day length diff from yesterday
+	icon = Image.open('icons/1.png')
+	image.paste(icon, box=(250, 200), mask=icon)
+	text = ':'.join(str(day_len).split(':')[:2])
+	w, h = bigfont.getsize(text)
+	center_offset = (100 - w) / 2
+	draw.text((250 + center_offset, 290), text, (0,0,0), bigfont)
+
+	text = '(+' if day_len > day_len_yest else '(-'
+	text += ':'.join(str(day_len_diff).split(':')[1:3]) + ')'
+	w, h = smallfont.getsize(text)
+	center_offset = (100 - w) / 2
+	draw.text((250 + center_offset, 320), text, (0,0,0), smallfont)
+
+	# Render sunset icon and todays sunset time
 	icon = Image.open('icons/sunset.png')
 	image.paste(icon, box=(370, 200), mask=icon)
 	text = sunset.strftime('%H:%M')
@@ -202,12 +228,12 @@ def main():
 		return 'th' if 11<=d<=13 else {1:'st',2:'nd',3:'rd'}.get(d%10, 'th')
 	def custom_strftime(format, t):
 		return t.strftime(format).replace('{S}', str(t.day) + suffix(t.day))
-	draw.line((0, 330, 600, 330), fill=255)
+	draw.line((0, 345, 600, 345), fill=255)
 	text = 	custom_strftime('%A the {S} of %B %Y', d)
 	w, h = bigfont.getsize(text)
 	center_offset = (600 - w) / 2
-	draw.text((center_offset, 340), text, (0,0,0), bigfont)
-	y = 370
+	draw.text((center_offset, 350), text, (0,0,0), bigfont)
+	y = 380
 
 	def get_key(event):
 		if 'dateTime' in event['start']:
@@ -258,3 +284,10 @@ def main():
 	image.save(IMAGE_NAME, "PNG")
 
 	return send_file(IMAGE_NAME, as_attachment=False)
+
+@app.route('/config')
+def config():
+	if os.path.exists('config/config.json'):
+		with open('config/config.json', 'r') as config:
+			return jsonify(json.load(config))
+	return ""
