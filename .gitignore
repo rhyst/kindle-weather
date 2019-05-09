@@ -5,3 +5,4 @@ lib
 *.yml
 *.json
 *.dat
+*.save
