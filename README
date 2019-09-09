@@ -4,18 +4,40 @@ Instructions for Kindle Touch
 3) Eject & unplug your Kindle
 4) Go to [HOME] -> [MENU] > Settings -> [MENU] > Update Your Kindle
 
-Kual + MRPI
+Kual + MRPI + USB Networking + SS Hack + Python
 1) Put KUAL-KDK-2.0.azw2 somewhere in the documents/ directory tree
 2) Copy contents of kual-mrinstaller-1.7.N-r16438.tar.xz to root
-3) Put Update_linkss_0.25.N_install_touch_pw.bin in /mrpackages
+3) Copy mrpackages folder to root
 4) Eject & unplug Kindle
 5) Go to KUAL -> Helpers -> Install MR Packages
 
 Kindle-weather
 1) Copy kindle folder to /extensions
 2) Ensure .env file in /extensions/kindle has correct vars for user/pass/url
+3) Copy the following files into /extensions/kindle/bin
+    /linkss/etc/ImageMagick-6/colors.xml
+    /linkss/etc/ImageMagick-6/delegates.xml
+4) Eject & unplug Kindle
+5) Go to KUAL -> Kindle Weather
 
 Done!
+
+Optional USB Networking
+On Kindle
+1) Put Update_usbnet_0.22.N_install_touch_pw.bin in /mrpackages (if not installed above)
+2) Eject & unplug Kindle
+3) Go to KUAL -> Helpers -> Install MR Packages
+4) Go to KUAL -> USBNewtwork -> * Toggle USBNetwork * 
+
+On PC (Ubuntu)
+1) Open your network settings
+2) Open "USB Ethernet" settings
+3) Open the "IPv4" tab 
+4) Set "IPv4 Method" to "Manual"
+5) Under "Addresses", set "Address" to 192.168.15.201 and "Netmask" to 255.255.255.0
+6) Click "Apply"
+7) Restart the connection by disabling it and re-enabling it
+8) Run "ssh root@192.168.15.244"
 
 Jailbreak Files:
 https://www.mobileread.com/forums/showthread.php?t=225030
