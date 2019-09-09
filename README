@@ -1,3 +1,25 @@
+Instructions for Kindle Touch
+1) Extract kindle-jailbreak-1.15.N-r16256.tar.xz
+2) Unzip the contents of the kindle-5.4-jailbreak.zip archive to the root directory of your Kindle
+3) Eject & unplug your Kindle
+4) Go to [HOME] -> [MENU] > Settings -> [MENU] > Update Your Kindle
+
+Kual + MRPI
+1) Put KUAL-KDK-2.0.azw2 somewhere in the documents/ directory tree
+2) Copy contents of kual-mrinstaller-1.7.N-r16438.tar.xz to root
+3) Put Update_linkss_0.25.N_install_touch_pw.bin in /mrpackages
+4) Eject & unplug Kindle
+5) Go to KUAL -> Helpers -> Install MR Packages
+
+Kindle-weather
+1) Copy kindle folder to /extensions
+2) Ensure .env file in /extensions/kindle has correct vars for user/pass/url
+
+Done!
+
+Jailbreak Files:
+https://www.mobileread.com/forums/showthread.php?t=225030
+
 Other reading:
 https://github.com/DDRBoxman/kindle-weather/
 https://github.com/cathay4t/kindle-weather
