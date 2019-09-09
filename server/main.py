@@ -167,7 +167,7 @@ def main():
 	sunrise_yest = sun_yest['sunrise']
 	sunset_yest = sun_yest['sunset']
 	day_len_yest = sunset_yest - sunrise_yest
-	day_len_diff = day_len - day_len_yest
+	day_len_diff = abs(day_len - day_len_yest)
 
 	# Render sunrise icon and todays sunrise time
 	icon = Image.open('icons/sunrise.png')
