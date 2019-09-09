@@ -1,0 +1,5 @@
+{
+  "items": [
+     {"name": "Kindle Weather", "action": "setsid ./bin/init.sh"}
+  ]
+}
