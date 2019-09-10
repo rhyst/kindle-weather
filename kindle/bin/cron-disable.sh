@@ -1,2 +1,3 @@
- mntroot rw
- 2 mv cron.bak /etc/crontab/root
+mntroot rw
+mv cron.bak /etc/crontab/root
+restart cron

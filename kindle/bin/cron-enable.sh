@@ -1,6 +1,7 @@
- ./cron-disable.sh
- 2 
- 3 mntroot rw
- 4 rm -f cron.bak
- 5 cp /etc/crontab/root ./cron.bak
- 6 echo "*/5 * * * * /mnt/us/extensions/kindle-weather/bin/display-weather.sh" >>/etc/crontab/root
+./cron-disable.sh
+ 
+mntroot rw
+rm -f cron.bak
+cp /etc/crontab/root ./cron.bak
+echo "45 * * * * /mnt/us/extensions/kindle-weather/bin/display-weather.sh" >>/etc/crontab/root
+restart cron
