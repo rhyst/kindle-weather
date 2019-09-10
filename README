@@ -1,3 +1,8 @@
+TODO:
+- Make scripts add its own cronjob
+- See if we need SS Hack to run
+- See if we need Python to run
+
 Instructions for Kindle Touch
 1) Extract kindle-jailbreak-1.15.N-r16256.tar.xz
 2) Unzip the contents of the kindle-5.4-jailbreak.zip archive to the root directory of your Kindle
