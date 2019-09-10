@@ -26,6 +26,7 @@ while true; do
                 rm "mode-close"
                 rm "mode-wifi"
                 lipc-set-prop com.lab126.cmd wirelessEnable 1
+                ./cron-disable.sh
                 start lab126_gui
                 exit 0
         fi

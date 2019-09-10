@@ -18,6 +18,9 @@ lipc-set-prop com.lab126.powerd preventScreenSaver 1
 echo "Fetching and displaying information"
 ./display-weather.sh
 
+echo "Enabling cron job"
+./cron-enable.sh
+
 echo "Listening for key press"
 for id in $(ps aux | grep monitor-button.sh | awk '{print $2}'); do
 	kill -9 $id
