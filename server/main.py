@@ -1,7 +1,6 @@
 import os
 import json
 import requests
-import datetime
 from flask import Flask, send_file, request, redirect, jsonify
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
@@ -9,7 +8,6 @@ from PIL import Image, ImageFont, ImageDraw
 from astral import Astral
 from dotenv import load_dotenv
 import pickle
-from datetime import timedelta
 from googleapiclient.discovery import build
 from google_auth_oauthlib.flow import Flow
 from google.auth.transport.requests import Request
@@ -19,6 +17,9 @@ import arrow
 load_dotenv()
 MO_API_KEY = os.getenv('MO_API_KEY')
 IMAGE_NAME = os.getenv('IMAGE_NAME')
+REDIRECT_URI = os.getenv('REDIRECT_URI')
+MO_LOCATION_ID = os.getenv('MO_LOCATION_ID')
+ASTRAL_LOCATION = os.getenv('ASTRAL_LOCATION')
 
 WEATHER_TYPES = {
 	"NA": "Not available",
@@ -62,13 +63,6 @@ limiter = Limiter(
     default_limits=["5/minute"]
 )
 
-def getDate(dateString):
-	if len(dateString) <= 11:
-		dateString = dateString + 'T00:00:00+00:00'
-	if len(dateString) <= 21:
-		dateString = dateString[:-1] + '+00:00'
-	return datetime.datetime.strptime(dateString,"%Y-%m-%dT%H:%M:%S%z")
-
 @app.route("/")
 def main():
 	# Create api credentials
@@ -80,7 +74,7 @@ def main():
 		flow = Flow.from_client_secrets_file(
 				'config/client_id.json',
 				scopes=['https://www.googleapis.com/auth/calendar.readonly'],
-				redirect_uri='http://weather.tyers.io')
+				redirect_uri=REDIRECT_URI)
 		code = request.args.get('code')
 		if not code:
 			auth_url, _ = flow.authorization_url(prompt='consent')
@@ -104,11 +98,10 @@ def main():
 	boldfont = ImageFont.truetype("fonts/RobotoBold.ttf", 18, encoding="unic")
 
 	# Get forecast
-	r = requests.get('http://datapoint.metoffice.gov.uk/public/data/val/wxfcs/all/json/352036?res=3hourly&key=' + MO_API_KEY)
+	r = requests.get('http://datapoint.metoffice.gov.uk/public/data/val/wxfcs/all/json/{}?res=3hourly&key={}'.format(MO_LOCATION_ID, MO_API_KEY))
 	data = r.json()
 
 	# Convert forecast to something readable
-	field_key = { a['name']: {'name': a['$'], 'units': a['units']} for a in data["SiteRep"]['Wx']['Param'] }
 	all_predictions = []
 	for day in data["SiteRep"]['DV']['Location']['Period']:
 		date = day['value'][:-1]
@@ -118,8 +111,7 @@ def main():
 			prediction['time'] = str(int(int(prediction['$']) / 60)) + ':00'
 			prediction['datetime'] = date + ' ' + str(int(int(prediction['$']) / 60)) + ':00'
 			all_predictions.append(prediction)
-	update_time = data["SiteRep"]['DV']['dataDate']
-	forecast = ''
+
 	for index, prediction in enumerate(all_predictions[1:6]):
 		left_offset = (10 * (index + 1)) + (index * 110)
 		# Draw weather icon
@@ -153,16 +145,16 @@ def main():
 		draw.text((left_offset + center_offset, 175), text, (0,0,0), smallfont)
 
 	# Get todays sunrise and sunset
-	d = datetime.datetime.now()
+	now=arrow.now()
 	a = Astral()
-	location = a['London']
-	sun = location.sun(local=True, date=d)
+	location = a[ASTRAL_LOCATION]
+	sun = location.sun(local=True, date=now)
 	sunrise = sun['sunrise']
 	sunset = sun['sunset']
 	day_len = sunset - sunrise
 
 	# Get yesterdays sunrise and sunset
-	d_yest = d - timedelta(days=1)
+	d_yest = now.replace(days=-1)
 	sun_yest = location.sun(local=True, date=d_yest)
 	sunrise_yest = sun_yest['sunrise']
 	sunset_yest = sun_yest['sunset']
@@ -200,19 +192,19 @@ def main():
 	draw.text((370 + center_offset, 290), text, (0,0,0), bigfont)
 
 	# Write checked time and updated time
-	updated_at = getDate(data["SiteRep"]['DV']['dataDate'])
-	text = 'Checked at ' + d.strftime('%H:%M') + ' and last updated at ' + updated_at.strftime('%H:%M')
+	updated_at = arrow.get(data["SiteRep"]['DV']['dataDate'])
+	text = 'Checked at ' + now.format('HH:mm') + ' and last updated at ' + updated_at.format('HH:mm')
 	draw.text((10, 775), text, (0,0,0), smallfont)
 
 	# Get upcoming calendar events
 	calendar_sdk = build('calendar', 'v3', credentials=credentials)
 	calendar_list = calendar_sdk.calendarList().list().execute()
-	for calendar in calendar_list['items']:
-		print(calendar['id'] + ' ' + calendar['summary'])
+	#for calendar in calendar_list['items']:
+	#	print(calendar['id'] + ' ' + calendar['summary'])
 	calendar_ids = [ calendar_list_entry['id'] for calendar_list_entry in calendar_list['items'] ]
-	today = datetime.datetime.now()
+	today = arrow.now()
 	today_morning = today.strftime('%Y-%m-%dT00:00:00Z')
-	tomorrow = today + timedelta(days=1)
+	tomorrow = today.replace(days=-1)
 	events = []
 	for calendar_id in calendar_ids:
 		events_page = calendar_sdk.events().list(
@@ -224,12 +216,8 @@ def main():
 			).execute()
 		events += events_page['items']
 
-	def suffix(d):
-		return 'th' if 11<=d<=13 else {1:'st',2:'nd',3:'rd'}.get(d%10, 'th')
-	def custom_strftime(format, t):
-		return t.strftime(format).replace('{S}', str(t.day) + suffix(t.day))
 	draw.line((0, 345, 600, 345), fill=255)
-	text = 	custom_strftime('%A the {S} of %B %Y', d)
+	text =  now.format('dddd {} Do {} MMMM YYYY').format('the', 'of')
 	w, h = bigfont.getsize(text)
 	center_offset = (600 - w) / 2
 	draw.text((center_offset, 350), text, (0,0,0), bigfont)
@@ -237,9 +225,9 @@ def main():
 
 	def get_key(event):
 		if 'dateTime' in event['start']:
-			return getDate(event['start']['dateTime'])
+			return arrow.get(event['start']['dateTime'])
 		else:
-			return getDate(event['start']['date'])
+			return arrow.get(event['start']['date'])
 	events.sort(key=get_key)
 
 	item_spacing = 25
@@ -253,12 +241,12 @@ def main():
 		if 'organizer' in event and 'displayName' in event['organizer']:
 			calendar = event['organizer']['displayName']
 		if 'dateTime' in event['start']:
-			start_time = getDate(event['start']['dateTime'])
-			end_time = getDate(event['end']['dateTime'])
+			start_time = arrow.get(event['start']['dateTime'])
+			end_time = arrow.get(event['end']['dateTime'])
 			diff = abs(start_time - end_time)
 			time_text = start_time.strftime('%H:%M') + ' ' + str(diff.seconds//3600) + ' hours' 
 		else:
-			start_time = getDate(event['start']['date'])
+			start_time = arrow.get(event['start']['date'])
 			time_text = 'All day'
 		if current_date != start_time.strftime('%Y/%m/%d'):
 			if y + item_spacing + extra_day_spacing >= 750:
@@ -269,7 +257,7 @@ def main():
 			elif start_time.strftime('%Y/%m/%d') == tomorrow.strftime('%Y/%m/%d'):
 				text = 'Tomorrow'
 			else:
-				text = arrow.get(start_time).humanize().capitalize() + ' on ' + custom_strftime('%A the {S} of %B', start_time)
+				text = start_time.humanize().capitalize() + ' on ' + start_time.format('dddd {} Do {} MMMM').format('the', 'of')
 			draw.text((10, y), text, (0,0,0), boldfont)
 			current_date = start_time.strftime('%Y/%m/%d')
 			y += item_spacing
