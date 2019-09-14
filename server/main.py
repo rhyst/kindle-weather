@@ -20,6 +20,7 @@ IMAGE_NAME = os.getenv('IMAGE_NAME')
 REDIRECT_URI = os.getenv('REDIRECT_URI')
 MO_LOCATION_ID = os.getenv('MO_LOCATION_ID')
 ASTRAL_LOCATION = os.getenv('ASTRAL_LOCATION')
+TIMEZONE = os.getenv('TIMEZONE')
 
 WEATHER_TYPES = {
 	"NA": "Not available",
@@ -145,7 +146,7 @@ def main():
 		draw.text((left_offset + center_offset, 175), text, (0,0,0), smallfont)
 
 	# Get todays sunrise and sunset
-	now=arrow.now()
+	now=arrow.now(TIMEZONE)
 	a = Astral()
 	location = a[ASTRAL_LOCATION]
 	sun = location.sun(local=True, date=now)
@@ -202,7 +203,7 @@ def main():
 	#for calendar in calendar_list['items']:
 	#	print(calendar['id'] + ' ' + calendar['summary'])
 	calendar_ids = [ calendar_list_entry['id'] for calendar_list_entry in calendar_list['items'] ]
-	today = arrow.now()
+	today = arrow.now(TIMEZONE)
 	today_morning = today.strftime('%Y-%m-%dT00:00:00Z')
 	tomorrow = today.replace(days=-1)
 	events = []
