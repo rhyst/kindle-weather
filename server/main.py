@@ -349,6 +349,8 @@ def main():
 		# Calendar
 		calendar(draw, 420, 235, 550)
 
+		image = image.rotate(-90, expand=True)
+
 		image.save(IMAGE_NAME, "PNG")
 
 
