@@ -18,6 +18,10 @@ if [ 0 -eq `lipc-get-prop com.lab126.cmd wirelessEnable` ]; then
         sleep 60
 fi
 
+if [ 1 -eq $LANDSCAPE ]; then
+	URL=$URL?landscape
+fi
+
 echo "Getting image"
 rm ss.png
 curl -L --user $USER:$PASSWORD $URL > ss.png
