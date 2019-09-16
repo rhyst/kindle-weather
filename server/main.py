@@ -13,13 +13,6 @@ from google_auth_oauthlib.flow import Flow
 from google.auth.transport.requests import Request
 import arrow
 
-weathdata = {}
-with open('weath.json', 'r') as f: 
-	weathdata = json.load(f)
-dailweathdata = {}
-with open('dailweath.json', 'r') as f: 
-	dailweathdata = json.load(f)
-
 load_dotenv()
 MO_API_KEY = os.getenv('MO_API_KEY')
 IMAGE_NAME = os.getenv('IMAGE_NAME')
