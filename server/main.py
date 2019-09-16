@@ -298,7 +298,7 @@ def main():
 		draw.text((680 + center_offset, 145), text, (0,0,0), smallfont)
 				
 		# Hourly updated
-		text = 'Updated at ' + hourly_updated_at.format('HH:mm')
+		text = 'Updated ' + hourly_updated_at.format('ddd h a')
 		draw.text((5, 215), text, (0,0,0), smallerfont)
 
 				# Horizontal Line
@@ -358,11 +358,11 @@ def main():
 		calendar(draw, 420, 235, 550)
 
 		# Daily updated
-		text = 'Updated at ' + daily_updated_at.format('HH:mm')
+		text = 'Updated ' + daily_updated_at.format('ddd h a')
 		draw.text((5, 585), text, (0,0,0), smallerfont)
 
 		# Calendar and General checked at
-		text = 'Checked at ' + now.format('HH:mm')
+		text = 'Updated ' + now.format('ddd h a')
 		draw.text((420, 585), text, (0,0,0), smallerfont)
 
 
@@ -442,7 +442,7 @@ def main():
 		draw.text((370 + center_offset, 290), text, (0,0,0), bigfont)
 
 		# Write checked time and updated time
-		text = 'Checked at ' + now.format('HH:mm') + ' and last updated at ' + hourly_updated_at.format('HH:mm')
+		text = 'Checked at ' + now.format('ddd h a') + ' and last updated at ' + hourly_updated_at.format('ddd h a')
 		draw.text((10, 775), text, (0,0,0), smallfont)
 
 		draw.line((0, 345, 600, 345), fill=255)
