@@ -89,6 +89,7 @@ def main():
 	bigfont = ImageFont.truetype("fonts/Roboto.ttf", 26, encoding="unic")
 	font = ImageFont.truetype("fonts/Roboto.ttf", 20, encoding="unic")
 	smallfont = ImageFont.truetype("fonts/Roboto.ttf", 18, encoding="unic")
+	smallerfont = ImageFont.truetype("fonts/Roboto.ttf", 12, encoding="unic")
 	boldfont = ImageFont.truetype("fonts/RobotoBold.ttf", 18, encoding="unic")
 
 	# Get forecast
@@ -106,6 +107,8 @@ def main():
 			prediction['datetime'] = date + ' ' + str(int(int(prediction['$']) / 60)) + ':00'
 			hourly_predictions.append(prediction)
 	
+	hourly_updated_at = arrow.get(data["SiteRep"]['DV']['dataDate'])
+
 	r = requests.get('http://datapoint.metoffice.gov.uk/public/data/val/wxfcs/all/json/{}?res=daily&key={}'.format(MO_LOCATION_ID, MO_API_KEY))
 	data = r.json()
 
@@ -127,6 +130,8 @@ def main():
 			"Gn": daypred['Gn'],
 			"Gm": nightpred['Gm']
 		})
+
+	daily_updated_at = arrow.get(data["SiteRep"]['DV']['dataDate'])
 
 	# Get todays sunrise and sunset
 	now=arrow.now(TIMEZONE)
@@ -277,7 +282,6 @@ def main():
 			w, h = smallfont.getsize(text)
 			center_offset = (100 - w) / 2
 			draw.text((left_offset + center_offset, start_height + 175), text, (0,0,0), smallfont)
-		
 		# Render sunset icon and todays sunset time
 		icon = Image.open('icons/sunset.png')
 		image.paste(icon, box=(680, 20), mask=icon)
@@ -292,6 +296,13 @@ def main():
 		w, h = smallfont.getsize(text)
 		center_offset = (100 - w) / 2
 		draw.text((680 + center_offset, 145), text, (0,0,0), smallfont)
+				
+		# Hourly updated
+		text = 'Updated at ' + hourly_updated_at.format('HH:mm')
+		draw.text((5, 215), text, (0,0,0), smallerfont)
+
+				# Horizontal Line
+		draw.line((0, 230, 800, 230), fill=255)
 
 		# 4 day forecast
 		start_height = 230
@@ -340,14 +351,21 @@ def main():
 			text = str(int(1.609344 * float(prediction["Gm"]))) + "kph"
 			draw.text((310, top_offset + 50), text, (0,0,0), smallfont)
 
-		# Horizontal Line
-		draw.line((0, 230, 800, 230), fill=255)
-
 		# Vertical Line
 		draw.line((400, 230, 400, 600), fill=255)
 
 		# Calendar
 		calendar(draw, 420, 235, 550)
+
+		# Daily updated
+		text = 'Updated at ' + daily_updated_at.format('HH:mm')
+		draw.text((5, 585), text, (0,0,0), smallerfont)
+
+		# Calendar and General checked at
+		text = 'Checked at ' + now.format('HH:mm')
+		draw.text((420, 585), text, (0,0,0), smallerfont)
+
+
 
 		image = image.rotate(-90, expand=True)
 
@@ -424,8 +442,7 @@ def main():
 		draw.text((370 + center_offset, 290), text, (0,0,0), bigfont)
 
 		# Write checked time and updated time
-		updated_at = arrow.get(data["SiteRep"]['DV']['dataDate'])
-		text = 'Checked at ' + now.format('HH:mm') + ' and last updated at ' + updated_at.format('HH:mm')
+		text = 'Checked at ' + now.format('HH:mm') + ' and last updated at ' + hourly_updated_at.format('HH:mm')
 		draw.text((10, 775), text, (0,0,0), smallfont)
 
 		draw.line((0, 345, 600, 345), fill=255)
