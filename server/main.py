@@ -56,6 +56,17 @@ WEATHER_TYPES = {
 	"30": "Thunder"
 }
 
+def time_diff(a,b):
+    sign = '+'
+    if (a > b):
+        s = (a - b).seconds
+    else:
+        s = (b - a).seconds
+        sign = '-'
+    hours, remainder = divmod(s, 3600)
+    minutes, seconds = divmod(remainder, 60)
+    return '{}{:02}:{:02}'.format(sign,int(minutes), int(seconds))
+
 app = Flask(__name__)
 limiter = Limiter(
     app,
@@ -145,12 +156,12 @@ def main():
 	# Get yesterdays sunrise and sunset
 	d_yest = now.shift(days=-1)
 	sun_yest = location.sun(local=True, date=d_yest)
-	sunrise_yest = sun_yest['sunrise']
-	sunset_yest = sun_yest['sunset']
+	sunrise_yest = arrow.get(sun_yest['sunrise'])
+	sunset_yest = arrow.get(sun_yest['sunset'])
 	day_len_yest = sunset_yest - sunrise_yest
-	day_len_diff =  day_len - day_len_yest if day_len > day_len_yest else day_len_yest - day_len
-	sunrise_diff =  sunrise - sunrise_yest if sunrise > sunrise_yest else sunrise_yest - sunrise
-	sunset_diff = sunset - sunset_yest if sunset < sunset_yest else sunset_yest - sunset
+	day_len_diff = time_diff(day_len, day_len_yest)
+	sunrise_diff =  time_diff(sunrise, sunrise_yest.shift(days=1))
+	sunset_diff = time_diff(sunset, sunset_yest.shift(days=1))
 
 	# Get upcoming calendar events
 	calendar_sdk = build('calendar', 'v3', credentials=credentials)
@@ -241,8 +252,7 @@ def main():
 		draw.text((10 + center_offset, 110), text, (0,0,0), bigfont)
 
 		# Render sunrise diff
-		text = '(+' if sunrise > sunrise_yest else '(-'
-		text += ':'.join(str(sunrise_diff).split(':')[1:3]) + ')'
+		text = '(' + sunrise_diff + ')'
 		w, h = smallfont.getsize(text)
 		center_offset = (100 - w) / 2
 		draw.text((10 + center_offset, 145), text, (0,0,0), smallfont)
@@ -291,8 +301,7 @@ def main():
 		draw.text((680 + center_offset, 110), text, (0,0,0), bigfont)
 
 		# Render sunset diff
-		text = '(+' if sunset < sunset_yest else '(-'
-		text += ':'.join(str(sunset_diff).split(':')[1:3]) + ')'
+		text = '(' + sunset_diff + ')'
 		w, h = smallfont.getsize(text)
 		center_offset = (100 - w) / 2
 		draw.text((680 + center_offset, 145), text, (0,0,0), smallfont)
@@ -427,8 +436,7 @@ def main():
 		center_offset = (100 - w) / 2
 		draw.text((250 + center_offset, 290), text, (0,0,0), bigfont)
 
-		text = '(+' if day_len > day_len_yest else '(-'
-		text += ':'.join(str(day_len_diff).split(':')[1:3]) + ')'
+		text = '(' + day_len_diff + ')'
 		w, h = smallfont.getsize(text)
 		center_offset = (100 - w) / 2
 		draw.text((250 + center_offset, 320), text, (0,0,0), smallfont)
