@@ -5,7 +5,8 @@ from flask import Flask, send_file, request, redirect, jsonify
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from PIL import Image, ImageFont, ImageDraw
-from astral import Astral
+from astral.geocoder import database, lookup
+from astral.sun import sun as sunny
 from dotenv import load_dotenv
 import pickle
 from googleapiclient.discovery import build
@@ -146,16 +147,15 @@ def main():
 
 	# Get todays sunrise and sunset
 	now=arrow.now(TIMEZONE)
-	a = Astral()
-	location = a[ASTRAL_LOCATION]
-	sun = location.sun(local=True, date=now)
+	location = lookup(ASTRAL_LOCATION, database())
+	sun = sunny(location.observer, date=now)
 	sunrise = sun['sunrise']
 	sunset = sun['sunset']
 	day_len = sunset - sunrise
 
 	# Get yesterdays sunrise and sunset
 	d_yest = now.shift(days=-1)
-	sun_yest = location.sun(local=True, date=d_yest)
+	sun_yest = sunny(location.observer, date=d_yest)
 	sunrise_yest = arrow.get(sun_yest['sunrise'])
 	sunset_yest = arrow.get(sun_yest['sunset'])
 	day_len_yest = sunset_yest - sunrise_yest
