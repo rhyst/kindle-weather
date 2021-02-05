@@ -1,3 +1,4 @@
+#!/bin/bash
 for file in icons/small/*.svg; do rsvg-convert --format=png -w 25 -h 25 --output=${file/svg/}png ${file}; done
 for file in icons/med/*.svg; do rsvg-convert --format=png -w 50 -h 50 --output=${file/svg/}png ${file}; done
 for file in icons/*.svg; do rsvg-convert --format=png -w 100 -h 100 --output=${file/svg/}png ${file}; done
