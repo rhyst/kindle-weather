@@ -79,12 +79,12 @@ limiter = Limiter(
 def main():
 	# Create api credentials
 	credentials = None
-	if os.path.exists('config/credentials.dat'):
-		with open('config/credentials.dat', 'rb') as credentials_dat:
+	if os.path.exists('credentials.dat'):
+		with open('credentials.dat', 'rb') as credentials_dat:
 			credentials = pickle.load(credentials_dat)
 	if not credentials:
 		flow = Flow.from_client_secrets_file(
-				'config/client_id.json',
+				'client_id.json',
 				scopes=['https://www.googleapis.com/auth/calendar.readonly'],
 				redirect_uri=REDIRECT_URI)
 		code = request.args.get('code')
@@ -93,7 +93,7 @@ def main():
 			return redirect(auth_url)
 		flow.fetch_token(code=code)
 		credentials = flow.credentials
-		with open('config/credentials.dat', 'wb') as credentials_dat:
+		with open('credentials.dat', 'wb') as credentials_dat:
 			pickle.dump(credentials, credentials_dat)
 	if credentials and credentials.expired:
 		credentials.refresh(Request())
@@ -469,7 +469,7 @@ def main():
 
 @app.route('/config')
 def config():
-	if os.path.exists('config/config.json'):
-		with open('config/config.json', 'r') as config:
+	if os.path.exists('config.json'):
+		with open('config.json', 'r') as config:
 			return jsonify(json.load(config))
 	return ""
