@@ -20,7 +20,7 @@ limits==1.5.1
 MarkupSafe==1.1.1
 oauthlib==3.1.0
 Pillow==8.1.0
-protobuf==3.14.0
+protobuf==3.15.0
 pyasn1==0.4.8
 pyasn1-modules==0.2.8
 python-dateutil==2.8.1
